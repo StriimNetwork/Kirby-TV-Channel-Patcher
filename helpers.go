@@ -14,15 +14,15 @@ func clear() {
 }
 
 // Since we only give 2 options for the user, selection will do all the work for us without having to re-write the code.
-func selection(input string, function func())  {
+func selection(input string, goToFunc func(), currentFunc func())  {
 	switch input {
 	case "1":
-		function()
+		goToFunc()
 	case "2":
 		os.Exit(0)
 	default:
 		// They shouldn't have entered this
-		main()
+		currentFunc()
 	}
 }
 

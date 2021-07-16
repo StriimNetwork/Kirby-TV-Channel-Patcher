@@ -7,6 +7,7 @@ import (
 
 var header = "Kirby TV Channel Patcher\nBy: SketchMaster2001\n\n"
 
+
 func main()  {
 	clear()
 	fmt.Printf("%s", header)
@@ -14,7 +15,7 @@ func main()  {
 	var input string
 	fmt.Scanln(&input)
 
-	selection(input, prePatch)
+	selection(input, prePatch, main)
 }
 
 func prePatch() {
@@ -26,7 +27,7 @@ func prePatch() {
 	var input string
 	fmt.Scanln(&input)
 
-	selection(input, download)
+	selection(input, download, prePatch)
 }
 
 func download() {
@@ -48,7 +49,7 @@ func download() {
 		fmt.Scanln(&input)
 		os.Exit(0)
 	}
-	
+
 	finish()
 }
 
