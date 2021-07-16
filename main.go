@@ -56,7 +56,7 @@ func download() {
 func finish() {
 	clear()
 	fmt.Printf(header)
-	fmt.Printf("Please follow these important steps to install the Kirby TV Channel.\n\n1. Place the WAD in the WAD folder on your SD Card.\n\n2. Go to your WAD manager and press the minus button to 'delete' the WAD.\n\nNOTE: This step is crucial as you will get the -1022 error if you do not do this.\n\n3. Install the WAD as you would normally.\n\nFor a more in depth guide, go to 'https:wii.guide/kirby-tv'\n\n")
+	fmt.Printf("Patching is complete! Please move the WAD from the WAD folder on to your SD Card, and install the channel as normal.\nFor a more in depth guide, go to 'wii.guide/kirby-tv'.\n\n")
 	fmt.Println("Press any key to exit the application.")
 
 	var input string
