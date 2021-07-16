@@ -10,7 +10,7 @@ var header = "Kirby TV Channel Patcher\nBy: SketchMaster2001\n\n"
 
 func main()  {
 	clear()
-	fmt.Printf("%s", header)
+	fmt.Printf(header)
 	fmt.Printf("1.Start\n2.Exit\n\nChoose: ")
 	var input string
 	fmt.Scanln(&input)
