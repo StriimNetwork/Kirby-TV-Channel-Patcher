@@ -5,9 +5,7 @@ import (
 	"os"
 )
 
-var (
-	header = "Kirby TV Channel Patcher\nBy: SketchMaster2001\n\n"
-)
+var header = "Kirby TV Channel Patcher\nBy: SketchMaster2001\n\n"
 
 func main()  {
 	clear()
@@ -17,8 +15,6 @@ func main()  {
 	fmt.Scanln(&input)
 
 	selection(input, prePatch)
-
-
 }
 
 func prePatch() {
@@ -52,7 +48,7 @@ func download() {
 		fmt.Scanln(&input)
 		os.Exit(0)
 	}
-
+	
 	finish()
 }
 
