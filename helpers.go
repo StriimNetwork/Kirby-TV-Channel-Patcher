@@ -1,9 +1,13 @@
 package main
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"fmt"
 	"github.com/inancgumus/screen"
+	"github.com/wii-tools/wadlib"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -26,33 +30,75 @@ func selection(input string, goToFunc func(), currentFunc func())  {
 	}
 }
 
-// DownloadFile downloads the WAD from the specified url
-func DownloadFile(filepath string, url string) error {
-	// Get the data
+func errorFunc(err error) {
+	clear()
+	fmt.Printf(header)
+	fmt.Println("An error has occurred. DM SketchMaster2001 #0713 on Discord for support, along with the error.")
+	fmt.Printf("\nError: %s\n", err)
+	fmt.Println("\nPress enter to exit the application.")
+
+	// Only exists so the process doesn't die without user interaction
+	var input string
+	fmt.Scanln(&input)
+	os.Exit(0)
+}
+
+// downloadFile downloads a file from the specified URL.
+func downloadFile(url string, outpath string, keepFile bool) ([]byte, error){
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		errorFunc(err)
 	}
-	defer resp.Body.Close()
 
-	// Create WAD directory
-	err = os.Mkdir("WAD", 0777)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		// Handle if WAD directory exists
-		if os.IsExist(err) {
+		errorFunc(err)
+	}
+
+	if keepFile {
+		err = ioutil.WriteFile(outpath, data, 0777)
+		if err != nil {
+			errorFunc(err)
 		}
 	}
 
-	filepath = fmt.Sprintf("WAD/%s", filepath)
+	return data, nil
+}
 
-	// Create the file
-	out, err := os.Create(filepath)
+func getWadContents(tmd []byte, ticket []byte) (wadlib.WAD, error) {
+	// Create empty WAD
+	wad := wadlib.WAD{}
+
+	// Load the tmd
+	err := wad.LoadTMD(tmd)
+	if err != nil {
+		return wadlib.WAD{}, err
+	}
+
+	// Load the ticket
+	err = wad.LoadTicket(ticket)
+	if err != nil {
+		return wadlib.WAD{}, err
+	}
+
+	return wad, nil
+}
+
+// decryptAESCBC is used to decrypt the app files into a format that can be packed into a WAD.
+func decryptAESCBC(key []byte, iv []byte, data []byte, outPath string) error {
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
+	mode := cipher.NewCBCDecrypter(block, iv)
+
+	mode.CryptBlocks(data, data)
+
+	err = ioutil.WriteFile(outPath, data, 0777)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
