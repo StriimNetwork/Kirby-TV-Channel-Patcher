@@ -1,21 +1,20 @@
 package main
 
 import (
-	"Kirby-TV-Channel-Patcher/wad"
 	"fmt"
 	"github.com/gabstv/go-bsdiff/pkg/bspatch"
 	"github.com/wii-tools/GoNUSD"
+	"github.com/wii-tools/wadlib"
 	"io/ioutil"
 	"os"
 )
 
 const (
-	header = "Kirby TV Channel Patcher\nBy: SketchMaster2001\n\n"
+	header     = "Kirby TV Channel Patcher\nBy: SketchMaster2001\n\n"
 	sketch_url = "https://sketchmaster2001.github.io"
 )
 
-
-func main()  {
+func main() {
 	clear()
 	fmt.Printf(header)
 	fmt.Printf("1.Start\n2.Exit\n\nChoose: ")
@@ -42,75 +41,56 @@ func patch() {
 	fmt.Printf(header)
 	fmt.Println("Patching Kirby TV Channel...")
 
-	err := os.Mkdir("patching-dir", 0777)
-	if err != nil {
-		// Overwrite patching-dir folder if it exists
-		if os.IsExist(err) {
-
-		}
-	}
-
-	data, err := GoNUSD.Download(0x0001000148434d50, 257, false, false)
+	wadData, err := GoNUSD.Download(0x0001000148434d50, 257, false)
 	if err != nil {
 		errorFunc(err)
 	}
 
 	// Since NUS does not have a ticket for us and GoNUSD does not store the TMD data for some reason, we have to download the files ourselves.
-	ticket, err := downloadFile(fmt.Sprintf("%s/kirby-tv/0001000148434d50.tik", sketch_url), "patching-dir/0001000148434d50.tik", true)
+	ticket, err := downloadFile(fmt.Sprintf("%s/kirby-tv/0001000148434d50.tik", sketch_url))
 	if err != nil {
 		errorFunc(err)
 	}
 
-	tmd, err := downloadFile(fmt.Sprintf("%s/kirby-tv/0001000148434d50.tmd", sketch_url), "patching-dir/0001000148434d50.tmd", true)
+	err = wadData.LoadTicket(ticket)
 	if err != nil {
-		errorFunc(err)
-	}
-
-	wadBuffer, err := getWadContents(tmd, ticket)
-	if err != nil {
-		errorFunc(err)
-	}
-
-	for i, content := range wadBuffer.TMD.Contents {
-		// Create IV based on the content's Index
-		iv := []byte{0x00, byte(content.Index), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-		err := decryptAESCBC(wadBuffer.Ticket.TitleKey[:], iv, data[2+i], fmt.Sprintf("patching-dir/%08x.app", content.Index))
-		if err != nil {
-			errorFunc(err)
-		}
-
-		// Download and patch 00000002.app
-		if content.Index == 00000002 {
-			// Download patch
-			patch, err := downloadFile(fmt.Sprintf("%s/kirby-tv/kirby-tv.patch", sketch_url), "", false)
-			if err != nil {
-				errorFunc(err)
-			}
-
-			// Create patch buffer
-			patchedFile, err := bspatch.Bytes(data[2+i], patch)
-			if err != nil {
-				errorFunc(err)
-			}
-
-			// Write patch
-			err = ioutil.WriteFile("patching-dir/00000002.app", patchedFile, 077)
-			if err != nil {
-				if os.IsExist(err) {
-					// Overwrite current file.
-				} else {
-					// Error we cannot continue off of.
-					errorFunc(err)
-				}
-			}
-		}
+		return
 	}
 
 	// Download cert
-	_, err = downloadFile(fmt.Sprintf("%s/cert", sketch_url), "patching-dir/0001000148434d50.certs", true)
+	cert, err := downloadFile(fmt.Sprintf("%s/cert", sketch_url))
 
-	// Pack the WAD
-	err = wad.Pack()
+	wadData.CertificateChain = cert
+
+	wadContents, err := wadData.GetWAD(wadlib.WADTypeCommon)
+	if err != nil {
+		errorFunc(err)
+	}
+
+	// Download patch
+	patch, err := downloadFile(fmt.Sprintf("%s/kirby-tv/kirbo.patch", sketch_url))
+	if err != nil {
+		errorFunc(err)
+	}
+
+	patchedWad, err := bspatch.Bytes(wadContents, patch)
+	if err != nil {
+		errorFunc(err)
+	}
+
+	// Write the WAD to file. First create the WAD directory
+	err = os.Mkdir("WAD", 0777)
+	if err != nil {
+		// If the directory exists, do nothing
+		if os.IsExist(err) {
+
+		} else {
+			// We cannot handle this
+			errorFunc(err)
+		}
+	}
+
+	err = ioutil.WriteFile("WAD/Kirby-TV-Channel(Striim Network).wad", patchedWad, os.ModePerm)
 	if err != nil {
 		errorFunc(err)
 	}
